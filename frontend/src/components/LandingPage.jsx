@@ -9,13 +9,20 @@ import {
   Clock, 
   CheckCircle,
   Menu,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { useState } from "react";
+import axios from "axios";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const LandingPage = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [email, setEmail] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState(null); // null, 'success', 'error'
 
   const springConfig = {
     type: "spring",
