@@ -165,11 +165,42 @@ const LandingPage = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       className="form-input"
                       required
+                      disabled={isSubmitting}
                     />
-                    <button type="submit" className="form-submit-embedded">
-                      Request Demo
+                    <button 
+                      type="submit" 
+                      className="form-submit-embedded"
+                      disabled={isSubmitting || !email}
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        "Request Demo"
+                      )}
                     </button>
                   </form>
+                  
+                  {/* Status Messages */}
+                  {submissionStatus === 'success' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="status-message success"
+                    >
+                      ✅ Demo request submitted successfully! We'll contact you soon.
+                    </motion.div>
+                  )}
+                  
+                  {submissionStatus === 'error' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="status-message error"
+                    >
+                      ❌ Failed to submit demo request. Please try again.
+                    </motion.div>
+                  )}
+                  
                   <p className="body-small hero-subtitle">
                     Join 500+ psychology professionals already using Zentium Assist
                   </p>
