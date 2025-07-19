@@ -72,11 +72,36 @@ const LandingPage = () => {
     }
   ];
 
-  const handleDemoRequest = (e) => {
+  const handleDemoRequest = async (e) => {
     e.preventDefault();
-    // Mock demo request
-    alert(`Demo requested for: ${email}`);
-    setEmail("");
+    setIsSubmitting(true);
+    setSubmissionStatus(null);
+    
+    try {
+      const response = await axios.post(`${API}/demo-requests`, {
+        email: email
+      });
+      
+      // Show success message
+      setSubmissionStatus('success');
+      setEmail("");
+      
+      // Clear success message after 5 seconds
+      setTimeout(() => {
+        setSubmissionStatus(null);
+      }, 5000);
+      
+    } catch (error) {
+      console.error('Demo request failed:', error);
+      setSubmissionStatus('error');
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setSubmissionStatus(null);
+      }, 5000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
