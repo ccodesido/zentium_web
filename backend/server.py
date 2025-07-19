@@ -76,6 +76,86 @@ async def get_status_checks():
     status_checks = await db.status_checks.find().to_list(1000)
     return [StatusCheck(**status_check) for status_check in status_checks]
 
+# Demo Request Routes
+@api_router.post("/demo-requests", response_model=DemoRequestResponse)
+async def create_demo_request(input: DemoRequestCreate):
+    try:
+        # Check if email already exists
+        existing_request = await db.demo_requests.find_one({"email": input.email})
+        if existing_request:
+            # Update existing request instead of creating duplicate
+            update_data = {
+                "updated_at": datetime.utcnow(),
+                "status": "pending"  # Reset status to pending
+            }
+            if input.company:
+                update_data["company"] = input.company
+            if input.phone:
+                update_data["phone"] = input.phone
+            if input.message:
+                update_data["message"] = input.message
+                
+            await db.demo_requests.update_one(
+                {"email": input.email}, 
+                {"$set": update_data}
+            )
+            
+            updated_request = await db.demo_requests.find_one({"email": input.email})
+            return DemoRequestResponse(
+                id=updated_request["id"],
+                email=updated_request["email"],
+                status=updated_request["status"],
+                created_at=updated_request["created_at"],
+                message="Demo request updated successfully"
+            )
+        
+        # Create new demo request
+        demo_request_dict = input.dict()
+        demo_request = DemoRequest(**demo_request_dict)
+        
+        # Insert into database
+        result = await db.demo_requests.insert_one(demo_request.dict())
+        
+        return DemoRequestResponse(
+            id=demo_request.id,
+            email=demo_request.email,
+            status=demo_request.status,
+            created_at=demo_request.created_at
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating demo request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit demo request")
+
+@api_router.get("/demo-requests", response_model=List[DemoRequest])
+async def get_demo_requests():
+    """Admin endpoint to get all demo requests"""
+    try:
+        demo_requests = await db.demo_requests.find().sort("created_at", -1).to_list(1000)
+        return [DemoRequest(**request) for request in demo_requests]
+    except Exception as e:
+        logger.error(f"Error fetching demo requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch demo requests")
+
+@api_router.get("/demo-requests/stats")
+async def get_demo_request_stats():
+    """Get demo request statistics"""
+    try:
+        total_requests = await db.demo_requests.count_documents({})
+        pending_requests = await db.demo_requests.count_documents({"status": "pending"})
+        contacted_requests = await db.demo_requests.count_documents({"status": "contacted"})
+        demo_scheduled = await db.demo_requests.count_documents({"status": "demo_scheduled"})
+        
+        return {
+            "total_requests": total_requests,
+            "pending_requests": pending_requests,
+            "contacted_requests": contacted_requests,
+            "demo_scheduled": demo_scheduled
+        }
+    except Exception as e:
+        logger.error(f"Error fetching demo request stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
+
 # Include the router in the main app
 app.include_router(api_router)
 
