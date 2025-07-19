@@ -5,8 +5,8 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional
 import uuid
 from datetime import datetime
 
@@ -34,6 +34,30 @@ class StatusCheck(BaseModel):
 
 class StatusCheckCreate(BaseModel):
     client_name: str
+
+# Demo Request Models
+class DemoRequest(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: EmailStr = Field(..., description="Professional email address")
+    company: Optional[str] = Field(None, description="Company/clinic name")
+    phone: Optional[str] = Field(None, description="Phone number")
+    message: Optional[str] = Field(None, description="Additional message")
+    status: str = Field(default="pending", description="pending, contacted, demo_scheduled, closed")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class DemoRequestCreate(BaseModel):
+    email: EmailStr
+    company: Optional[str] = None
+    phone: Optional[str] = None
+    message: Optional[str] = None
+
+class DemoRequestResponse(BaseModel):
+    id: str
+    email: str
+    status: str
+    created_at: datetime
+    message: str = "Demo request submitted successfully"
 
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
