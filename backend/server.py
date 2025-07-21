@@ -185,6 +185,95 @@ async def get_demo_request_stats():
         logger.error(f"Error fetching demo request stats: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch statistics")
 
+# Contact Form Routes
+@api_router.post("/contacto", response_model=ContactMessageResponse)
+async def create_contact_message(input: ContactMessageCreate):
+    """Create a new contact message"""
+    try:
+        # Create contact message
+        contact_dict = input.dict()
+        contact_message = ContactMessage(**contact_dict)
+        
+        # Insert into database
+        result = await db.contact_messages.insert_one(contact_message.dict())
+        
+        return ContactMessageResponse(
+            id=contact_message.id,
+            nombre=contact_message.nombre,
+            email=contact_message.email,
+            status=contact_message.status,
+            created_at=contact_message.created_at
+        )
+        
+    except Exception as e:
+        logger.error(f"Error creating contact message: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to submit contact message")
+
+@api_router.get("/contacto", response_model=List[ContactMessage])
+async def get_contact_messages():
+    """Admin endpoint to get all contact messages"""
+    try:
+        contact_messages = await db.contact_messages.find().sort("created_at", -1).to_list(1000)
+        return [ContactMessage(**message) for message in contact_messages]
+    except Exception as e:
+        logger.error(f"Error fetching contact messages: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch contact messages")
+
+@api_router.get("/contacto/stats")
+async def get_contact_message_stats():
+    """Get contact message statistics"""
+    try:
+        total_messages = await db.contact_messages.count_documents({})
+        new_messages = await db.contact_messages.count_documents({"status": "nuevo"})
+        processed_messages = await db.contact_messages.count_documents({"status": "procesado"})
+        responded_messages = await db.contact_messages.count_documents({"status": "respondido"})
+        
+        # Stats by consultation type
+        info_messages = await db.contact_messages.count_documents({"tipoConsulta": "informacion"})
+        demo_messages = await db.contact_messages.count_documents({"tipoConsulta": "demo"})
+        support_messages = await db.contact_messages.count_documents({"tipoConsulta": "soporte"})
+        sales_messages = await db.contact_messages.count_documents({"tipoConsulta": "ventas"})
+        
+        return {
+            "total_messages": total_messages,
+            "new_messages": new_messages,
+            "processed_messages": processed_messages,
+            "responded_messages": responded_messages,
+            "by_type": {
+                "informacion": info_messages,
+                "demo": demo_messages,
+                "soporte": support_messages,
+                "ventas": sales_messages
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error fetching contact message stats: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch statistics")
+
+@api_router.put("/contacto/{message_id}/status")
+async def update_contact_message_status(message_id: str, status: str):
+    """Update contact message status"""
+    try:
+        valid_statuses = ["nuevo", "procesado", "respondido", "cerrado"]
+        if status not in valid_statuses:
+            raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of: {valid_statuses}")
+        
+        result = await db.contact_messages.update_one(
+            {"id": message_id},
+            {"$set": {"status": status, "updated_at": datetime.utcnow()}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Contact message not found")
+        
+        return {"message": f"Status updated to {status}"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating contact message status: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update status")
+
 # Include the router in the main app
 app.include_router(api_router)
 
