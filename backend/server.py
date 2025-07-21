@@ -59,6 +59,35 @@ class DemoRequestResponse(BaseModel):
     created_at: datetime
     message: str = "Demo request submitted successfully"
 
+# Contact Form Models
+class ContactMessage(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    nombre: str = Field(..., description="Nombre completo del contacto")
+    email: EmailStr = Field(..., description="Email del contacto")
+    telefono: Optional[str] = Field(None, description="Teléfono del contacto")
+    empresa: Optional[str] = Field(None, description="Empresa o institución")
+    tipoConsulta: str = Field(..., description="Tipo de consulta")
+    mensaje: str = Field(..., description="Mensaje del contacto")
+    status: str = Field(default="nuevo", description="nuevo, procesado, respondido, cerrado")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class ContactMessageCreate(BaseModel):
+    nombre: str
+    email: EmailStr
+    telefono: Optional[str] = None
+    empresa: Optional[str] = None
+    tipoConsulta: str
+    mensaje: str
+
+class ContactMessageResponse(BaseModel):
+    id: str
+    nombre: str
+    email: str
+    status: str
+    created_at: datetime
+    message: str = "Mensaje enviado exitosamente"
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
